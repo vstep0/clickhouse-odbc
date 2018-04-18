@@ -23,6 +23,16 @@ namespace {
         DECLARE(TIMESTAMPDIFF),
         DECLARE(TIMESTAMPADD),
         DECLARE(CURDATE),
+        DECLARE(CURRENT_DATE),
+        DECLARE(CURRENT_TIMESTAMP),
+        DECLARE(EXTRACT),
+        DECLARE(FROM),
+        DECLARE(DAYOFWEEK),
+        DECLARE(CAST),
+        DECLARE(LOCATE),
+        DECLARE(LCASE),
+        DECLARE(LTRIM),
+
         //DECLARE(SQL_TSI_FRAC_SECOND),
         DECLARE(SQL_TSI_SECOND),
         DECLARE(SQL_TSI_MINUTE),
@@ -162,6 +172,11 @@ Token Lexer::NextToken() {
                 return MakeToken(Token::RCURLY, 1);
             case ',':
                 return MakeToken(Token::COMMA, 1);
+
+            case '*':
+                return MakeToken(Token::OTHER, 1);
+            case '/':
+                return MakeToken(Token::OTHER, 1);
 
             case '\'': {
                 const char* st = cur_;

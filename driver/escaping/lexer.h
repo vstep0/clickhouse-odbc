@@ -32,6 +32,15 @@ struct Token {
         TIMESTAMPDIFF,
         TIMESTAMPADD,
         CURDATE,
+        CURRENT_DATE,
+        CURRENT_TIMESTAMP,
+        EXTRACT,
+        FROM,
+        DAYOFWEEK,
+        CAST,
+        LOCATE,
+        LCASE,
+        LTRIM,
 
         // for TIMESTAMPDIFF
         SQL_TSI_FRAC_SECOND,

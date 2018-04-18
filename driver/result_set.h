@@ -6,6 +6,7 @@
 
 #include <Poco/NumberParser.h>
 #include <Poco/Types.h>
+#include <Poco/Exception.h>
 
 #include <vector>
 #include <memory>
@@ -17,10 +18,30 @@ class Field
 public:
     std::string data;
 
-    Poco::UInt64 getUInt() const{ return Poco::NumberParser::parseUnsigned64(data); }
-    Poco::Int64 getInt() const  { return Poco::NumberParser::parse64(data); }
-    float getFloat() const      { return Poco::NumberParser::parseFloat(data); }
-    double getDouble() const    { return Poco::NumberParser::parseFloat(data); }
+    Poco::UInt64 getUInt() const{
+        try {
+            return Poco::NumberParser::parseUnsigned64(data);
+        } catch (Poco::SyntaxException&) {
+            return 0;
+        }
+    }
+    Poco::Int64 getInt() const  {
+        try {
+            return Poco::NumberParser::parse64(data);
+        } catch (Poco::SyntaxException&) {
+            return 0;
+        }
+    }
+
+    float getFloat() const      { return getDouble(); }
+
+    double getDouble() const    {
+        try {
+            return Poco::NumberParser::parseFloat(data);
+        } catch (Poco::SyntaxException&) {
+            return 0;
+        }
+    }
 
     SQL_DATE_STRUCT getDate() const;
     SQL_TIMESTAMP_STRUCT getDateTime() const;

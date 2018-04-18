@@ -53,7 +53,7 @@ TEST(EscapeSequencesCase, ParseConvert6) {
 TEST(EscapeSequencesCase, ParseConvert6_1) {
     ASSERT_EQ(
         replaceEscapeSequences("SELECT  {fn   CONVERT(  {fn   ROUND(  1.1  +  2.4  ,  1  )  }  ,  SQL_BIGINT  )  }"),
-              "SELECT  toInt64(round(  1.1  +  2.4  ,  1  )  )"
+              "SELECT  toInt64(round(1.1 + 2.4, 1))"
     );
 }
 
@@ -85,7 +85,7 @@ TEST(EscapeSequencesCase, ParseRound) {
 TEST(EscapeSequencesCase, ParsePower) {
     ASSERT_EQ(
         replaceEscapeSequences("SELECT {fn POWER(`f_g38d`.`hsf_thkd_wect_fxge`,2)}"),
-        "SELECT pow(`f_g38d`.`hsf_thkd_wect_fxge`,2)"
+        "SELECT pow(`f_g38d`.`hsf_thkd_wect_fxge`, 2)"
     );
 }
 
@@ -119,24 +119,83 @@ TEST(EscapeSequencesCase, ParseTruncate) {
 TEST(EscapeSequencesCase, ParseCurdate1) { ASSERT_EQ( replaceEscapeSequences("SELECT {fn CURDATE()}"), "SELECT today()" ); }
 
 
-TEST(EscapeSequencesCase, ParseTimestampdiff2) { ASSERT_EQ( replaceEscapeSequences("SELECT {fn TIMESTAMPDIFF(SQL_TSI_DAY,CAST(`test`.`odbc1`.`datetime` AS DATE),{fn CURDATE()} )}"), "SELECT dateDiff('day',CAST(`test`.`odbc1`.`datetime` AS DATE),today() )"
-); }
+TEST(EscapeSequencesCase, ParseTimestampdiff2) {
+    ASSERT_EQ(
+        replaceEscapeSequences("SELECT {fn TIMESTAMPDIFF(SQL_TSI_DAY,CAST(`test`.`odbc1`.`datetime` AS DATE),{fn CURDATE()} )}"),
+            "SELECT dateDiff('day', CAST(`test`.`odbc1`.`datetime` AS DATE),today())");
+}
 
 TEST(EscapeSequencesCase, Parsetimestampdiff) {
     ASSERT_EQ(
         replaceEscapeSequences("SELECT {fn TIMESTAMPDIFF(SQL_TSI_DAY,CAST(`activity`.`min_activation_yabrowser` AS DATE),CAST(`activity`.`date` AS DATE))} AS `Calculation_503558746242125826`, SUM({fn CONVERT(1, SQL_BIGINT)}) AS `sum_Number_of_Records_ok`"),
-              "SELECT dateDiff('day',CAST(`activity`.`min_activation_yabrowser` AS DATE),CAST(`activity`.`date` AS DATE)) AS `Calculation_503558746242125826`, SUM(toInt64(1)) AS `sum_Number_of_Records_ok`"
+              "SELECT dateDiff('day', CAST(`activity`.`min_activation_yabrowser` AS DATE), CAST(`activity`.`date` AS DATE)) AS `Calculation_503558746242125826`, SUM(toInt64(1)) AS `sum_Number_of_Records_ok`"
     );
 }
 
-TEST(EscapeSequencesCase, ParseTimestampadd1) { ASSERT_EQ( replaceEscapeSequences("SELECT {fn TIMESTAMPADD(SQL_TSI_YEAR, 1, {fn CURDATE()})}"),
-"SELECT addYears(today(), 1)"
-); }
+TEST(EscapeSequencesCase, ParseTimestampadd1) {
+    ASSERT_EQ(
+        replaceEscapeSequences("SELECT {fn TIMESTAMPADD(SQL_TSI_YEAR, 1, {fn CURDATE()})}"),
+        "SELECT addYears(today(), 1)"
+    );
+}
 
-TEST(EscapeSequencesCase, ParseTimestampadd2) { ASSERT_EQ( replaceEscapeSequences("SELECT {fn  TIMESTAMPADD(  SQL_TSI_YEAR  ,  1  ,  {fn  CURDATE()  }  )  }"),
-                                                           "SELECT addYears(today()  , 1)"
-); }
+TEST(EscapeSequencesCase, ParseTimestampadd2) {
+    ASSERT_EQ(
+        replaceEscapeSequences("SELECT {fn  TIMESTAMPADD(  SQL_TSI_YEAR  ,  1  ,  {fn  CURDATE()  }  )  }"),
+              "SELECT addYears(today(), 1)");
+}
 
+TEST(EscapeSequencesCase, ParseTimestampadd3) {
+    ASSERT_EQ(
+        replaceEscapeSequences("SELECT {fn TIMESTAMPADD(SQL_TSI_DAY,0,{fn CURRENT_DATE()})}"),
+              "SELECT addDays(today(), 0)"
+    );
+}
+
+TEST(EscapeSequencesCase, ParseExtract) {
+    ASSERT_EQ(
+        replaceEscapeSequences("SELECT CAST({fn TRUNCATE(EXTRACT(YEAR FROM `Custom_SQL_Query`.`date`),0)} AS INTEGER) AS `yr_date_ok`"),
+              "SELECT CAST(trunc(toYear(`Custom_SQL_Query`.`date`), 0) AS INTEGER) AS `yr_date_ok`"
+    );
+}
+
+TEST(EscapeSequencesCase, ParseQuarter) {
+    ASSERT_EQ(
+        replaceEscapeSequences("SELECT {fn QUARTER(`Custom_SQL_Query`.`date`)} AS `qr_sentDate_ok`"),
+        "SELECT toQuarter(`Custom_SQL_Query`.`date`) AS `qr_sentDate_ok`"
+    );
+}
+
+TEST(EscapeSequencesCase, ParseDayOfWeek) {
+    ASSERT_EQ(
+        replaceEscapeSequences("SELECT {fn DAYOFWEEK(`Custom_SQL_Query`.`date`)} AS `dw_sentDate_ok`"),
+        "SELECT toDayOfWeek(`Custom_SQL_Query`.`date`) AS `dw_sentDate_ok`"
+    );
+}
+
+TEST(EscapeSequencesCase, ParseCurrentTimestamp) {
+    ASSERT_EQ(
+        replaceEscapeSequences("SELECT {fn CURRENT_TIMESTAMP(0)} AS `timeStamp`"),
+        "SELECT now() AS `timeStamp`"
+    );
+}
+
+TEST(EscapeSequencesCase, ParseComplexDateExpr) {
+    ASSERT_EQ(
+        replaceEscapeSequences(
+            "SELECT CAST({fn TRUNCATE(EXTRACT(YEAR FROM {fn TIMESTAMPADD(SQL_TSI_DAY,(-1 * ({fn DAYOFWEEK(`EmailDataD`.`sentDate`)} - 1)),CAST(`EmailDataD`.`sentDate` AS DATE))}),0)} AS INTEGER) AS `yr_Calculation_ok`"),
+        "SELECT CAST(trunc(toYear(addDays(CAST(`EmailDataD`.`sentDate` AS DATE), (-1 *(toDayOfWeek(`EmailDataD`.`sentDate`) - 1)))), 0) AS INTEGER) AS `yr_Calculation_ok`"
+    );
+}
+
+
+TEST(EscapeSequencesCase, ParseComplexDateExpr2) {
+    ASSERT_EQ(
+        replaceEscapeSequences(
+            "WHERE (({fn TIMESTAMPADD(SQL_TSI_DAY,(-1 * ({fn DAYOFWEEK(`EmailDataD`.`sentDate`)} - 1)),CAST(`EmailDataD`.`sentDate` AS DATE))} >= {ts '2017-01-01 00:00:00'}) AND ({fn TIMESTAMPADD(SQL_TSI_DAY,(-1 *({fn DAYOFWEEK(`EmailDataD`.`sentDate`)} - 1)),CAST(`EmailDataD`.`sentDate` AS DATE))} < {ts '2018-01-01 00:00:00'}))"),
+        "WHERE ((addDays(CAST(`EmailDataD`.`sentDate` AS DATE), (-1 *(toDayOfWeek(`EmailDataD`.`sentDate`) - 1))) >= toDateTime('2017-01-01 00:00:00')) AND (addDays(CAST(`EmailDataD`.`sentDate` AS DATE), (-1 *(toDayOfWeek(`EmailDataD`.`sentDate`) - 1))) < toDateTime('2018-01-01 00:00:00')))"
+    );
+}
 
 
 
@@ -161,5 +220,29 @@ TEST(EscapeSequencesCase, DateTime) {
     ASSERT_EQ(
         replaceEscapeSequences("SELECT {ts '2017.01.01 10:01:01'}"),
         "SELECT toDateTime('2017.01.01 10:01:01')"
+    );
+}
+
+
+TEST(EscapeSequencesCase, LOCATE) {
+    ASSERT_EQ(
+        replaceEscapeSequences("{fn LOCATE('Xsell',`dm_ExperimentsData`.`ProductLevel`,1)}"),
+        "position(`dm_ExperimentsData`.`ProductLevel`,'Xsell')"
+    );
+}
+
+
+TEST(EscapeSequencesCase, LCASE) {
+    ASSERT_EQ(
+        replaceEscapeSequences("{fn LCASE(`dm_ExperimentsData`.`Campaign`)}"),
+        "lower(`dm_ExperimentsData`.`Campaign`)"
+    );
+}
+
+
+TEST(EscapeSequencesCase, LTRIM) {
+    ASSERT_EQ(
+        replaceEscapeSequences("{fn LTRIM(`dm_ExperimentsData`.`Campaign`)}"),
+        "replaceRegexpOne(`dm_ExperimentsData`.`Campaign`, '^\\\\s+', '')"
     );
 }
